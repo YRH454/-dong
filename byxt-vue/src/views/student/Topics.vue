@@ -106,5 +106,9 @@ onUnmounted(() => clearInterval(timer.value))
 </script>
 
 <style scoped>
-.count-bar { padding: 6px 16px; font-size: 13px; color: #888; display: flex; align-items: center; gap: 8px }
+.count-bar { padding: 8px 16px; font-size: 13px; color: #888; display: flex; align-items: center; gap: 8px; font-weight: 500 }
+:deep(.van-cell) { margin: 0 8px 6px; border-radius: 14px !important; box-shadow: 0 1px 4px rgba(0,0,0,.03); transition: transform .15s }
+:deep(.van-cell:active) { transform: scale(.98) }
+:deep(.van-search) { padding: 8px 10px }
+:deep(.van-pull-refresh) { min-height: 100vh; background: linear-gradient(180deg, #f5f7f5, #fafcfa) }
 </style>
