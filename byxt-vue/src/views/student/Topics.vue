@@ -1,37 +1,60 @@
 <template>
-<div>
-  <div class="tip">每30秒自动刷新 &nbsp;<a @click="loadData">&#x21bb; 手动刷新</a> &nbsp;|&nbsp; 共 {{ topics.length }} 题</div>
-  <van-search v-model="keyword" placeholder="搜索教师/题目..." @search="onSearch" @input="onSearch" shape="round" />
-  <van-empty v-if="closed" description="现在不是选题时间" />
-  <van-empty v-else-if="selected" description="你已选过题目" />
-  <van-empty v-else-if="!topics.length" description="暂无可选题目" />
+<van-pull-refresh v-model="refreshing" @refresh="onRefresh">
+  <van-search v-model="keyword" placeholder="搜索教师或题目..." shape="round" @search="onSearch" @clear="onSearch" @input="debounceSearch" />
+  <van-notice-bar v-if="!closed && !selected && topics.length" left-icon="info-o" scrollable text="列表自动刷新，点击题目右侧按钮即可选题" background="#E8F5E9" color="#2E7D32" />
+  <van-empty v-if="closed" image="error" description="现在不是选题时间，请等待管理员开放" />
+  <van-empty v-else-if="selected" image="network" description="你已选过题目，不能重复选择" />
+  <van-empty v-else-if="!refreshing && !topics.length" image="search" description="暂无可选题目，请等待教师出题" />
   <div v-else>
-    <van-cell v-for="t in pageData" :key="t.id" :title="t.tm" :label="'教师：' + t.txm + (t.bz ? ' ｜ ' + t.bz : '')">
-      <template #right-icon><van-button size="small" type="primary" round @click="doSelect(t)">选择</van-button></template>
+    <div class="count-bar">共 {{ filtered.length }} 个题目 <van-tag type="success" size="small">{{ page }}/{{ totalPages }}</van-tag></div>
+    <van-cell v-for="t in pageData" :key="t.id" :title="t.tm" :label="`教师：${t.txm}${t.bz ? '  |  ' + t.bz : ''}`" size="large" clickable @click="()=>{}">
+      <template #right-icon><van-button size="small" type="success" round @click.stop="doSelect(t)">选题</van-button></template>
     </van-cell>
-    <van-pagination v-model="page" :total-items="filtered.length" :page-size="10" @change="onPage" style="margin-top:12px" />
+    <van-pagination v-if="totalPages>1" v-model="page" :total-items="filtered.length" :page-size="10" @change="onPage" style="margin-top:12px" />
   </div>
-</div>
+</van-pull-refresh>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { showToast, showConfirmDialog } from 'vant'
 import api from '../../api'
-const topics = ref([]), keyword = ref(''), page = ref(1), closed = ref(false), selected = ref(false)
-const filtered = computed(() => topics.value.filter(t => !keyword.value || t.tm.includes(keyword.value) || t.txm.includes(keyword.value)))
+
+const topics = ref([]), keyword = ref(''), page = ref(1), refreshing = ref(false)
+const closed = ref(false), selected = ref(false), timer = ref(0)
+
+const filtered = computed(() => topics.value.filter(t => !keyword.value || t.tm.includes(keyword.value) || (t.txm||'').includes(keyword.value)))
+const totalPages = computed(() => Math.ceil(filtered.value.length / 10))
 const pageData = computed(() => filtered.value.slice((page.value-1)*10, page.value*10))
 
 async function loadData() {
-  try { const r = await api.get('/student/topics'); if (r.closed) closed.value = true; else if (r.selected) selected.value = true; else topics.value = r.list || [] } catch (e) {}
+  try {
+    const r = await api.get('/student/topics')
+    if (r.closed) { closed.value = true; return }
+    if (r.selected) { selected.value = true; return }
+    closed.value = false; selected.value = false
+    topics.value = r.list || []
+  } catch (e) { /* server might be restarting */ }
 }
+async function onRefresh() { await loadData(); refreshing.value = false }
 async function doSelect(t) {
-  try { await showConfirmDialog({ title: '确认选题', message: '选择「' + t.tm + '」？' }) } catch { return }
-  try { const r = await api.post('/student/select-topic', { tmid: t.id })
-    if (r.code === 0) { showToast('选题成功'); loadData() } else showToast(r.msg) } catch (e) {}
+  try { await showConfirmDialog({ title: '确认选题', message: `选择「${t.tm}」？选定后不可更改` }) } catch { return }
+  try {
+    const r = await api.post('/student/select-topic', { tmid: t.id })
+    if (r.code === 0) { showToast({ message: '选题成功！请在选题结果中查看', icon: 'success' }); loadData() }
+    else showToast({ message: r.msg, icon: 'fail' })
+  } catch (e) { showToast('网络错误，请重试') }
 }
 function onPage(p) { page.value = p }
 function onSearch() { page.value = 1 }
-onMounted(loadData)
+let debounceTimer = 0
+function debounceSearch() { clearTimeout(debounceTimer); debounceTimer = setTimeout(onSearch, 300) }
+
+import { onMounted, onUnmounted } from 'vue'
+onMounted(() => { loadData(); timer.value = setInterval(loadData, 30000) })
+onUnmounted(() => clearInterval(timer.value))
 </script>
-<style scoped>.tip{background:#FFF8E1;color:#F57F17;padding:10px 14px;font-size:13px;border-left:4px solid #FFC107;margin-bottom:10px;border-radius:0 8px 8px 0}.tip a{color:#E65100;font-weight:600}</style>
+
+<style scoped>
+.count-bar { padding: 6px 16px; font-size: 13px; color: #888; display: flex; align-items: center; gap: 8px }
+</style>

@@ -1,57 +1,55 @@
 <template>
 <div class="app-shell">
-  <div class="topbar t-blue">
-    <span class="menu-btn" @click="showSide=!showSide">&#9776;</span>
-    <span class="brand">&#127919; 选题系统-教师端</span>
-    <span class="user-info">{{ user?.userId }} {{ user?.name }}</span>
-  </div>
+  <van-nav-bar title="选题系统-教师端" left-text="菜单" @click-left="showSide=!showSide" fixed placeholder>
+    <template #right><span style="font-size:13px;color:#888">{{ user?.userId }} {{ user?.name }}</span></template>
+  </van-nav-bar>
   <div class="body-wrap">
     <div class="sidebar" :class="{open:showSide}">
-      <div class="side-item" v-for="m in menus" :key="m.path" @click="nav(m.path)" :class="{active:$route.path===m.path}">
-        <span class="icon">{{ m.icon }}</span>{{ m.label }}
+      <div class="side-item" v-for="m in menus" :key="m.path" @click="nav(m.path)" :class="{active: currentPath===m.path}">
+        <span class="si-icon">{{ m.icon }}</span><span>{{ m.label }}</span>
       </div>
-      <div class="side-item danger" @click="logout">&#128682; 退出系统</div>
+      <div class="side-item logout" @click="doLogout"><span class="si-icon">🚪</span><span>退出系统</span></div>
     </div>
     <div class="overlay" v-if="showSide" @click="showSide=false" />
-    <div class="content"><router-view /></div>
+    <div class="content">
+      <router-view v-slot="{ Component }">
+        <keep-alive><component :is="Component" /></keep-alive>
+      </router-view>
+    </div>
   </div>
 </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 const router = useRouter(); const route = useRoute()
-const showSide = ref(false), user = ref(null)
+const showSide = ref(false), user = JSON.parse(localStorage.getItem('user') || '{}')
+const currentPath = computed(() => route.path)
 const menus = [
-  { path: '/teacher/add', icon: '&#9999;', label: '教师出题' },
-  { path: '/teacher/batch', icon: '&#128230;', label: '批量出题' },
-  { path: '/teacher/my-topics', icon: '&#128203;', label: '选题结果' },
-  { path: '/teacher/profile', icon: '&#128100;', label: '个人信息' },
-  { path: '/teacher/password', icon: '&#128273;', label: '修改密码' }
+  { path: '/teacher/add', icon: '✏️', label: '教师出题' },
+  { path: '/teacher/batch', icon: '📦', label: '批量出题' },
+  { path: '/teacher/my-topics', icon: '📋', label: '选题结果' },
+  { path: '/teacher/profile', icon: '👤', label: '个人信息' },
+  { path: '/teacher/password', icon: '🔑', label: '修改密码' }
 ]
-onMounted(() => { user.value = JSON.parse(localStorage.getItem('user') || '{}') })
 function nav(path) { router.push(path); showSide.value = false }
-function logout() { localStorage.clear(); router.push('/login') }
+function doLogout() { localStorage.clear(); router.replace('/login') }
 </script>
 
 <style scoped>
-.app-shell{display:flex;flex-direction:column;height:100vh;overflow:hidden}
-.topbar{display:flex;align-items:center;height:52px;padding:0 14px;color:#fff;gap:10px;flex-shrink:0}
-.t-blue{background:linear-gradient(135deg,#0D47A1,#1565C0)}
-.topbar .brand{font-size:16px;font-weight:700;flex:1}
-.topbar .user-info{font-size:12px;opacity:.85}
-.menu-btn{font-size:22px;cursor:pointer;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:8px}
+.app-shell{display:flex;flex-direction:column;height:100vh;overflow:hidden;background:#f4f6f9}
 .body-wrap{display:flex;flex:1;overflow:hidden}
-.sidebar{width:220px;background:#fff;border-right:1px solid #eee;overflow-y:auto;flex-shrink:0;padding:8px 0}
-.side-item{display:flex;align-items:center;gap:10px;height:46px;padding:0 18px;font-size:15px;cursor:pointer;border-left:3px solid transparent;color:#555}
+.sidebar{width:220px;background:#fff;border-right:1px solid #eee;overflow-y:auto;flex-shrink:0;padding:8px 0;display:flex;flex-direction:column}
+.side-item{display:flex;align-items:center;gap:10px;height:46px;padding:0 18px;font-size:15px;cursor:pointer;border-left:3px solid transparent;color:#555;transition:all .12s}
 .side-item:hover,.side-item.active{background:#E3F2FD;border-left-color:#1E88E5;color:#1565C0}
-.side-item .icon{font-size:18px;width:24px;text-align:center}
-.side-item.danger{color:#C62828;margin-top:auto;border-top:1px solid #eee}
-.content{flex:1;overflow-y:auto;padding:12px 14px}
+.si-icon{font-size:16px;width:24px;text-align:center}
+.side-item.logout{color:#C62828;margin-top:auto;border-top:1px solid #eee}
+.side-item.logout:hover{background:#FFEBEE;border-left-color:#C62828}
+.content{flex:1;overflow-y:auto}
 .overlay{display:none}
 @media(max-width:768px){
-  .sidebar{position:fixed;top:52px;left:0;bottom:0;transform:translateX(-100%);transition:transform .25s;z-index:100;box-shadow:4px 0 20px rgba(0,0,0,.15)}
+  .sidebar{position:fixed;top:46px;left:0;bottom:0;transform:translateX(-100%);transition:transform .25s ease;z-index:100;box-shadow:4px 0 20px rgba(0,0,0,.15)}
   .sidebar.open{transform:translateX(0)}
   .overlay{display:block;position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:99}
 }
