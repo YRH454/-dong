@@ -19,30 +19,46 @@ public class AdminController {
         String adminId = (String) req.getAttribute("adminId");
         try (Connection con = JdbcUtil.getConnection()) {
             String cond = " where adminid='" + adminId + "'";
-            // Student count
-            PreparedStatement ps = con.prepareStatement("select count(*) from student" + cond);
-            ResultSet rs = ps.executeQuery(); rs.next(); int studentCnt = rs.getInt(1); rs.close(); ps.close();
-            // Teacher count
-            ps = con.prepareStatement("select count(*) from teacher" + cond);
-            rs = ps.executeQuery(); rs.next(); int teacherCnt = rs.getInt(1); rs.close(); ps.close();
-            // Topic count
-            ps = con.prepareStatement("select count(*) from tm" + cond);
-            rs = ps.executeQuery(); rs.next(); int topicCnt = rs.getInt(1); rs.close(); ps.close();
-            // Selected count
-            ps = con.prepareStatement("select count(*) from tm" + cond + " and xh!=''");
-            rs = ps.executeQuery(); rs.next(); int selectedCnt = rs.getInt(1); rs.close(); ps.close();
-            // ZT
+            PreparedStatement ps; ResultSet rs;
+            ps = con.prepareStatement("select count(*) from student" + cond); rs = ps.executeQuery(); rs.next(); int studentCnt = rs.getInt(1); rs.close(); ps.close();
+            ps = con.prepareStatement("select count(*) from teacher" + cond); rs = ps.executeQuery(); rs.next(); int teacherCnt = rs.getInt(1); rs.close(); ps.close();
+            ps = con.prepareStatement("select count(*) from tm" + cond); rs = ps.executeQuery(); rs.next(); int topicCnt = rs.getInt(1); rs.close(); ps.close();
+            ps = con.prepareStatement("select count(*) from tm" + cond + " and xh!=''"); rs = ps.executeQuery(); rs.next(); int selectedCnt = rs.getInt(1); rs.close(); ps.close();
             int zt = new ZtDao().query(adminId);
 
+            // Per-teacher breakdown for chart
+            List<Map<String,Object>> teacherStats = new ArrayList<>();
+            ps = con.prepareStatement("select gh,xm,shangxian from teacher" + cond + " order by gh");
+            rs = ps.executeQuery();
+            while(rs.next()){
+                Map<String,Object> m = new HashMap<>();
+                m.put("name",rs.getString(2));
+                ps = con.prepareStatement("select count(*) from tm where gh='"+rs.getString(1)+"' and adminid='"+adminId+"'");
+                ResultSet rs2 = ps.executeQuery(); rs2.next(); int total = rs2.getInt(1); rs2.close(); ps.close();
+                ps = con.prepareStatement("select count(*) from tm where gh='"+rs.getString(1)+"' and xh!='' and adminid='"+adminId+"'");
+                rs2 = ps.executeQuery(); rs2.next(); int sel = rs2.getInt(1); rs2.close(); ps.close();
+                m.put("shangxian",rs.getInt(3)); m.put("total",total); m.put("selected",sel);
+                teacherStats.add(m);
+            }
+            rs.close(); ps.close();
+
             result.put("code", 0);
-            result.put("studentCount", studentCnt);
-            result.put("teacherCount", teacherCnt);
-            result.put("topicCount", topicCnt);
-            result.put("selectedCount", selectedCnt);
-            result.put("zt", zt);
-        } catch (Exception e) {
-            result.put("code", 1); result.put("msg", e.getMessage());
-        }
+            result.put("studentCount", studentCnt); result.put("teacherCount", teacherCnt);
+            result.put("topicCount", topicCnt); result.put("selectedCount", selectedCnt);
+            result.put("zt", zt); result.put("teacherStats", teacherStats);
+        } catch (Exception e) { result.put("code", 1); result.put("msg", e.getMessage()); }
+        return result;
+    }
+
+    // Excel export of topics
+    @GetMapping("/export-topics")
+    public Map<String, Object> exportTopics(HttpServletRequest req) {
+        Map<String, Object> result = new HashMap<>();
+        String adminId = (String) req.getAttribute("adminId");
+        try {
+            List<TmEx> list = new TmDao().query(" where adminid='"+adminId+"' order by gh", adminId);
+            result.put("code", 0); result.put("list", list);
+        } catch (Exception e) { result.put("code", 1); result.put("msg", e.getMessage()); }
         return result;
     }
 

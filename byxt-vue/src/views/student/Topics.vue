@@ -7,11 +7,27 @@
   <van-empty v-else-if="!refreshing && !topics.length" image="search" description="暂无可选题目，请等待教师出题" />
   <div v-else>
     <div class="count-bar">共 {{ filtered.length }} 个题目 <van-tag type="success" size="small">{{ page }}/{{ totalPages }}</van-tag></div>
-    <van-cell v-for="t in pageData" :key="t.id" :title="t.tm" :label="`教师：${t.txm}${t.bz ? '  |  ' + t.bz : ''}`" size="large" clickable @click="()=>{}">
-      <template #right-icon><van-button size="small" type="success" round @click.stop="doSelect(t)">选题</van-button></template>
+    <van-cell v-for="t in pageData" :key="t.id" :title="t.tm" :label="`教师：${t.txm}${t.bz ? '  |  ' + t.bz : ''}`" size="large" clickable @click="showDetail(t)">
+      <template #right-icon><van-button size="small" type="success" round>选题</van-button></template>
     </van-cell>
     <van-pagination v-if="totalPages>1" v-model="page" :total-items="filtered.length" :page-size="10" @change="onPage" style="margin-top:12px" />
   </div>
+
+  <!-- Topic Detail Popup -->
+  <van-popup v-model:show="showDlg" round position="bottom" :style="{maxHeight:'70vh'}">
+    <div style="padding:20px" v-if="detail">
+      <h3 style="font-size:18px;color:#2E7D32;margin-bottom:16px">📝 题目详情</h3>
+      <van-cell-group inset>
+        <van-cell title="题目" :value="detail.tm" />
+        <van-cell title="指导教师" :value="detail.txm" />
+        <van-cell title="备注说明" :value="detail.bz||'无'" />
+      </van-cell-group>
+      <div style="margin-top:20px;display:flex;gap:10px">
+        <van-button block round @click="showDlg=false">返回</van-button>
+        <van-button block round type="success" @click="doSelect(detail)">确认选择</van-button>
+      </div>
+    </div>
+  </van-popup>
 </van-pull-refresh>
 </template>
 
@@ -22,6 +38,9 @@ import api from '../../api'
 
 const topics = ref([]), keyword = ref(''), page = ref(1), refreshing = ref(false)
 const closed = ref(false), selected = ref(false), timer = ref(0)
+const showDlg = ref(false), detail = ref(null)
+
+function showDetail(t) { detail.value = t; showDlg.value = true }
 
 const filtered = computed(() => topics.value.filter(t => !keyword.value || t.tm.includes(keyword.value) || (t.txm||'').includes(keyword.value)))
 const totalPages = computed(() => Math.ceil(filtered.value.length / 10))
