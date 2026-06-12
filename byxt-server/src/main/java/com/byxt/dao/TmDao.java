@@ -1,4 +1,4 @@
-package com.byxt.dao;
+﻿package com.byxt.dao;
 
 import java.io.File;
 import java.sql.Connection;
@@ -18,7 +18,7 @@ import com.byxt.model.Tm;
 import com.byxt.model.TmEx;
 
 public class TmDao {
-	//--------------------------------------------绠＄悊鍛樼鏂规硶
+	//--------------------------------------------缁狅紕鎮婇崨妯碱伂閺傝纭?
 	public void delete(int tmid) throws Exception {
 		Connection conn = null;
 		PreparedStatement ps = null;
@@ -117,7 +117,7 @@ public class TmDao {
 		    rs=ps.executeQuery();
 			 wwb=Workbook.createWorkbook(excelPath);
 			 ws=wwb.createSheet("sheet1",0);
-			 String[] titles={"鏁欏笀宸ュ彿","鏁欏笀濮撳悕","棰樼洰","棰樼洰澶囨敞","瀛︾敓瀛﹀彿","瀛︾敓濮撳悕","涓撲笟","鐝骇"};
+			 String[] titles={"閺佹瑥绗€瀹搞儱褰?,"閺佹瑥绗€婵挸鎮?,"妫版娲?,"妫版娲版径鍥ㄦ暈","鐎涳妇鏁撶€涳箑褰?,"鐎涳妇鏁撴慨鎾虫倳","娑撴挷绗?,"閻濐厾楠?};
 			 int columnCount=titles.length;
 			 for(int i=0;i<columnCount;i++){
 				
@@ -156,7 +156,7 @@ public class TmDao {
 		    rs=ps.executeQuery();
 			 wwb=Workbook.createWorkbook(excelPath);
 			 ws=wwb.createSheet("sheet1",0);
-			 String[] titles={"鏁欏笀宸ュ彿","鏁欏笀濮撳悕","棰樼洰","棰樼洰澶囨敞","瀛︾敓瀛﹀彿","瀛︾敓濮撳悕","涓撲笟","鐝骇","email","phone","qq"};
+			 String[] titles={"閺佹瑥绗€瀹搞儱褰?,"閺佹瑥绗€婵挸鎮?,"妫版娲?,"妫版娲版径鍥ㄦ暈","鐎涳妇鏁撶€涳箑褰?,"鐎涳妇鏁撴慨鎾虫倳","娑撴挷绗?,"閻濐厾楠?,"email","phone","qq"};
 			 int columnCount=titles.length;
 			 for(int i=0;i<columnCount;i++){
 				
@@ -181,7 +181,7 @@ public class TmDao {
 		}
 	}
 	
-	//--------------------------------------------鏁欏笀绔柟娉?
+	//--------------------------------------------閺佹瑥绗€缁旑垱鏌熷▔?
 	public void add(Tm tm,String adminid) throws Exception {
 		Connection conn = null;
 		PreparedStatement ps = null;
@@ -218,7 +218,7 @@ public class TmDao {
 			JdbcUtil.free(null, ps, conn);
 		}
 	}
-	public void update2(String xh,String xm,String zy,String bj,String adminid) throws Exception {//瀛︾敓淇敼璧勬枡鍚庯紝棰樼洰闇€瑕佸啀鏇存柊涓?
+	public void update2(String xh,String xm,String zy,String bj,String adminid) throws Exception {//鐎涳妇鏁撴穱顔芥暭鐠у嫭鏋￠崥搴礉妫版娲伴棁鈧憰浣稿晙閺囧瓨鏌婃稉?
 		Connection conn = null;
 		PreparedStatement ps = null;
 		try {
@@ -235,7 +235,7 @@ public class TmDao {
 			JdbcUtil.free(null, ps, conn);
 		}
 	}
-	public void update3(String gh,String txm,String adminid) throws Exception {//鏁欏笀淇敼璧勬枡鍚庯紝棰樼洰闇€瑕佸啀鏇存柊涓?
+	public void update3(String gh,String txm,String adminid) throws Exception {//閺佹瑥绗€娣囶喗鏁肩挧鍕灐閸氬函绱濇０妯兼窗闂団偓鐟曚礁鍟€閺囧瓨鏌婃稉?
 		Connection conn = null;
 		PreparedStatement ps = null;
 		try {
@@ -295,7 +295,7 @@ public class TmDao {
 		}finally {JdbcUtil.free(rs, ps, conn);}
 		return tmList;
 	}
-	//瀛︾敓绔柟娉?
+	//鐎涳妇鏁撶粩顖涙煙濞?
 	public List<Tm> querytm(String condition) throws Exception{
 		Connection conn = null;
 		PreparedStatement ps = null;
@@ -323,7 +323,7 @@ public class TmDao {
 		}finally {JdbcUtil.free(rs, ps, conn);}
 		return tmList;
 	}
-	public void qcjl(String sno,String adminid) throws Exception {//娓呴櫎棰樼洰璁板綍
+	public void qcjl(String sno,String adminid) throws Exception {//濞撳懘娅庢０妯兼窗鐠佹澘缍?
 		Connection conn = null;
 		PreparedStatement ps = null;
 		try {
@@ -369,4 +369,37 @@ public class TmDao {
 	}
 	
 	
+
+	public static synchronized int xtWithStatus(int tmid,String xh,String xm,String zy,String bj,String reason,int choice) throws Exception{
+		Connection conn = null;
+		PreparedStatement ps1 = null, ps2 = null;
+		ResultSet rs = null;
+		try {
+			conn = JdbcUtil.getConnection();
+			String sql1 = "select * from tm where xh='' and status=0 and id="+tmid;
+			ps1=conn.prepareStatement(sql1);
+			rs=ps1.executeQuery();
+			if(rs.next()){
+				String sql2 = "update tm set xh=?,sxm=?,zy=?,bj=?,status=1,reason=?,choice=? where id=?";
+				ps2=conn.prepareStatement(sql2);
+				ps2.setString(1, xh); ps2.setString(2, xm); ps2.setString(3, zy);
+				ps2.setString(4, bj); ps2.setString(5, reason); ps2.setInt(6, choice);
+				ps2.setInt(7, tmid);
+				ps2.executeUpdate();
+				return 1;
+			} else { return 0; }
+		}finally { JdbcUtil.free(rs, ps1, null); JdbcUtil.free(null, ps2, conn); }
+	}
+
+	public void confirmStudent(int tmid) throws Exception {
+		Connection conn = null; PreparedStatement ps = null;
+		try { conn = JdbcUtil.getConnection(); ps = conn.prepareStatement("update tm set status=2 where id=?"); ps.setInt(1, tmid); ps.executeUpdate(); }
+		finally { JdbcUtil.free(null, ps, conn); }
+	}
+
+	public void rejectStudent(int tmid) throws Exception {
+		Connection conn = null; PreparedStatement ps = null;
+		try { conn = JdbcUtil.getConnection(); ps = conn.prepareStatement("update tm set status=3,xh='',sxm='',zy='',bj='',reason='' where id=?"); ps.setInt(1, tmid); ps.executeUpdate(); }
+		finally { JdbcUtil.free(null, ps, conn); }
+	}
 }

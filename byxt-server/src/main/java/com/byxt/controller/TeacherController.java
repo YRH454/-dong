@@ -1,4 +1,4 @@
-package com.byxt.controller;
+﻿package com.byxt.controller;
 
 import com.byxt.dao.*;
 import com.byxt.model.*;
@@ -44,7 +44,7 @@ public class TeacherController {
             tm.setTm(body.get("tm"));
             tm.setBz(body.getOrDefault("bz", ""));
             new TmDao().add(tm, adminId);
-            result.put("code", 0); result.put("msg", "出题成功");
+            result.put("code", 0); result.put("msg", "鍑洪鎴愬姛");
         } catch (Exception e) {
             result.put("code", 1); result.put("msg", e.getMessage());
         }
@@ -64,7 +64,7 @@ public class TeacherController {
             TmDao tmDao = new TmDao();
             Tm tm = new Tm(); tm.setGh(userId); tm.setTxm(userName); tm.setTm(tmName); tm.setBz(bz);
             for (int i = 0; i < count; i++) { tmDao.add(tm, adminId); }
-            result.put("code", 0); result.put("msg", "批量出题成功，共" + count + "条");
+            result.put("code", 0); result.put("msg", "鎵归噺鍑洪鎴愬姛锛屽叡" + count + "鏉?);
         } catch (Exception e) {
             result.put("code", 1); result.put("msg", e.getMessage());
         }
@@ -103,7 +103,7 @@ public class TeacherController {
             tm.setZy(body.getOrDefault("zy", ""));
             tm.setBj(body.getOrDefault("bj", ""));
             new TmDao().update(tm);
-            result.put("code", 0); result.put("msg", "更新成功");
+            result.put("code", 0); result.put("msg", "鏇存柊鎴愬姛");
         } catch (Exception e) {
             result.put("code", 1); result.put("msg", e.getMessage());
         }
@@ -115,7 +115,7 @@ public class TeacherController {
         Map<String, Object> result = new HashMap<>();
         try {
             new TmDao().delete(Integer.parseInt(body.get("id")));
-            result.put("code", 0); result.put("msg", "删除成功");
+            result.put("code", 0); result.put("msg", "鍒犻櫎鎴愬姛");
         } catch (Exception e) {
             result.put("code", 1); result.put("msg", e.getMessage());
         }
@@ -131,7 +131,7 @@ public class TeacherController {
             StudentDao sd = new StudentDao();
             Student st = sd.findStudentByIdAdminid(xh, adminId);
             if (st == null) {
-                result.put("code", 1); result.put("msg", "无此学号");
+                result.put("code", 1); result.put("msg", "鏃犳瀛﹀彿");
             } else {
                 result.put("code", 0);
                 result.put("xm", st.getXm());
@@ -175,7 +175,7 @@ public class TeacherController {
             t.setAdminid(adminId);
             new TeacherDao().update_t(t);
             new TmDao().update3(userId, body.get("xm"), adminId);
-            result.put("code", 0); result.put("msg", "保存成功");
+            result.put("code", 0); result.put("msg", "淇濆瓨鎴愬姛");
         } catch (Exception e) {
             result.put("code", 1); result.put("msg", e.getMessage());
         }
@@ -189,10 +189,26 @@ public class TeacherController {
             String userId = (String) req.getAttribute("userId");
             String adminId = (String) req.getAttribute("adminId");
             new TeacherDao().modipwd(userId, Encrypt.MD5(body.get("newPwd")), adminId);
-            result.put("code", 0); result.put("msg", "密码修改成功");
+            result.put("code", 0); result.put("msg", "瀵嗙爜淇敼鎴愬姛");
         } catch (Exception e) {
             result.put("code", 1); result.put("msg", e.getMessage());
         }
         return result;
     }
+
+	@PostMapping("/confirm-student")
+	public Map<String, Object> confirmStudent(@RequestBody Map<String, String> body) {
+		Map<String, Object> result = new HashMap<>();
+		try { new TmDao().confirmStudent(Integer.parseInt(body.get("id"))); result.put("code", 0); result.put("msg", "已确认选题"); }
+		catch (Exception e) { result.put("code", 1); result.put("msg", e.getMessage()); }
+		return result;
+	}
+
+	@PostMapping("/reject-student")
+	public Map<String, Object> rejectStudent(@RequestBody Map<String, String> body) {
+		Map<String, Object> result = new HashMap<>();
+		try { new TmDao().rejectStudent(Integer.parseInt(body.get("id"))); result.put("code", 0); result.put("msg", "已驳回"); }
+		catch (Exception e) { result.put("code", 1); result.put("msg", e.getMessage()); }
+		return result;
+	}
 }

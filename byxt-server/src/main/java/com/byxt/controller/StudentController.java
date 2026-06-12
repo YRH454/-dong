@@ -21,14 +21,17 @@ public class StudentController {
             int page = Integer.parseInt(req.getParameter("page") != null ? req.getParameter("page") : "1");
             int pageSize = Integer.parseInt(req.getParameter("pageSize") != null ? req.getParameter("pageSize") : "10");
 
-            // Check if student has selected
+            // Check if student has confirmed selection
             TmDao tmDao = new TmDao();
-            String c1 = " where xh='" + userId + "' and adminid='" + adminId + "'";
+            String c1 = " where xh='" + userId + "' and adminid='" + adminId + "' and status=2";
             if (tmDao.getRecordCount(c1) != 0) {
                 result.put("selected", true);
                 result.put("code", 0);
                 return result;
             }
+            // Check how many pending/rejected choices student has
+            int choiceCount = tmDao.getRecordCount(" where xh='" + userId + "' and adminid='" + adminId + "' and (status=1 or status=3)");
+            result.put("choiceCount", choiceCount);
 
             // Check zt
             ZtDao ztDao = new ZtDao();
@@ -64,17 +67,31 @@ public class StudentController {
             String userName = (String) req.getAttribute("userName");
             String adminId = (String) req.getAttribute("adminId");
             int tmid = Integer.parseInt(body.get("tmid"));
+            int choiceNo = Integer.parseInt(body.getOrDefault("choice", "1"));
+            String reason = body.getOrDefault("reason", "");
 
-            // Get student info
             StudentDao sd = new StudentDao();
             Student st = sd.findStudentByIdAdminid(userId, adminId);
 
-            int r = TmDao.xt(tmid, userId, st.getXm(), st.getZy(), st.getBj());
-            if (r == 1) { result.put("code", 0); result.put("msg", "选题成功"); }
-            else { result.put("code", 1); result.put("msg", "该题目已被选"); }
+            // Use new method with status tracking
+            int r = TmDao.xtWithStatus(tmid, userId, st.getXm(), st.getZy(), st.getBj(), reason, choiceNo);
+            if (r == 1) { result.put("code", 0); result.put("msg", "已提交志愿"+choiceNo+"，等待教师确认"); }
+            else { result.put("code", 1); result.put("msg", "该题目已被选或不可选"); }
         } catch (Exception e) {
             result.put("code", 1); result.put("msg", e.getMessage());
         }
+        return result;
+    }
+
+    @GetMapping("/teacher-detail")
+    public Map<String, Object> getTeacherDetail(@RequestParam String gh, HttpServletRequest req) {
+        Map<String, Object> result = new HashMap<>();
+        try {
+            String adminId = (String) req.getAttribute("adminId");
+            Teacher t = new TeacherDao().findTeacherByIdAdminid(gh, adminId);
+            if (t != null) { result.put("code", 0); result.put("teacher", t); }
+            else { result.put("code", 1); result.put("msg", "未找到该教师"); }
+        } catch (Exception e) { result.put("code", 1); result.put("msg", e.getMessage()); }
         return result;
     }
 

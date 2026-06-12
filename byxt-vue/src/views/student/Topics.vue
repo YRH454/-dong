@@ -14,18 +14,44 @@
   </div>
 
   <!-- Topic Detail Popup -->
-  <van-popup v-model:show="showDlg" round position="bottom" :style="{maxHeight:'70vh'}">
+  <van-popup v-model:show="showDlg" round position="bottom" :style="{maxHeight:'80vh'}">
     <div style="padding:20px" v-if="detail">
-      <h3 style="font-size:18px;color:#2E7D32;margin-bottom:16px">📝 题目详情</h3>
+      <h3 style="font-size:18px;color:#2E7D32;margin-bottom:12px">📝 题目详情</h3>
       <van-cell-group inset>
         <van-cell title="题目" :value="detail.tm" />
-        <van-cell title="指导教师" :value="detail.txm" />
+        <van-cell title="指导教师" :value="detail.txm" is-link @click="showTeacher(detail.gh)" />
         <van-cell title="备注说明" :value="detail.bz||'无'" />
       </van-cell-group>
-      <div style="margin-top:20px;display:flex;gap:10px">
-        <van-button block round @click="showDlg=false">返回</van-button>
-        <van-button block round type="success" @click="doSelect(detail)">确认选择</van-button>
+      <!-- Choice selector -->
+      <div style="margin:12px 0;display:flex;gap:8px;align-items:center;padding:0 12px">
+        <span style="font-size:14px;color:#666">志愿：</span>
+        <van-radio-group v-model="choiceNo" direction="horizontal">
+          <van-radio :name="1" :disabled="choiceCount>=1&&!detail.choice">第一志愿</van-radio>
+          <van-radio :name="2" :disabled="choiceCount>=2">第二志愿</van-radio>
+        </van-radio-group>
       </div>
+      <!-- Reason -->
+      <van-field v-model="reason" type="textarea" rows="2" placeholder="申请理由（选填，30字以内）" maxlength="60" />
+      <div style="margin-top:16px;display:flex;gap:10px">
+        <van-button block round @click="showDlg=false">返回</van-button>
+        <van-button block round type="success" @click="doSelect(detail)">提交选择</van-button>
+      </div>
+    </div>
+  </van-popup>
+
+  <!-- Teacher Detail Popup -->
+  <van-popup v-model:show="showTeacherDlg" round position="bottom">
+    <div style="padding:20px" v-if="teacherInfo">
+      <h3 style="font-size:18px;color:#1565C0;margin-bottom:12px">👨‍🏫 教师详情</h3>
+      <van-cell-group inset>
+        <van-cell title="姓名" :value="teacherInfo.xm"/>
+        <van-cell title="工号" :value="teacherInfo.gh"/>
+        <van-cell title="职称" :value="teacherInfo.zhicheng||'无'"/>
+        <van-cell title="邮箱" :value="teacherInfo.email||'无'"/>
+        <van-cell title="电话" :value="teacherInfo.phone||'无'"/>
+        <van-cell title="办公地点" :value="teacherInfo.bgdd||'无'"/>
+      </van-cell-group>
+      <van-button block round @click="showTeacherDlg=false" style="margin-top:12px">关闭</van-button>
     </div>
   </van-popup>
 </van-pull-refresh>
@@ -37,10 +63,15 @@ import { showToast, showConfirmDialog } from 'vant'
 import api from '../../api'
 
 const topics = ref([]), keyword = ref(''), page = ref(1), refreshing = ref(false)
-const closed = ref(false), selected = ref(false), timer = ref(0)
-const showDlg = ref(false), detail = ref(null)
+const closed = ref(false), selected = ref(false), timer = ref(0), choiceCount = ref(0)
+const showDlg = ref(false), detail = ref(null), reason = ref(''), choiceNo = ref(1)
+const showTeacherDlg = ref(false), teacherInfo = ref(null)
 
-function showDetail(t) { detail.value = t; showDlg.value = true }
+function showDetail(t) { detail.value = t; reason.value = ''; choiceNo.value = choiceCount.value >= 1 ? 2 : 1; showDlg.value = true }
+
+async function showTeacher(gh) {
+  try { const r = await api.get('/student/teacher-detail?gh='+gh); if(r.code===0) { teacherInfo.value = r.teacher; showTeacherDlg.value = true } } catch(e) {}
+}
 
 const filtered = computed(() => topics.value.filter(t => !keyword.value || t.tm.includes(keyword.value) || (t.txm||'').includes(keyword.value)))
 const totalPages = computed(() => Math.ceil(filtered.value.length / 10))
@@ -52,15 +83,15 @@ async function loadData() {
     if (r.closed) { closed.value = true; return }
     if (r.selected) { selected.value = true; return }
     closed.value = false; selected.value = false
-    topics.value = r.list || []
+    topics.value = r.list || []; choiceCount.value = r.choiceCount || 0
   } catch (e) { /* server might be restarting */ }
 }
 async function onRefresh() { await loadData(); refreshing.value = false }
 async function doSelect(t) {
   try { await showConfirmDialog({ title: '确认选题', message: `选择「${t.tm}」？选定后不可更改` }) } catch { return }
   try {
-    const r = await api.post('/student/select-topic', { tmid: t.id })
-    if (r.code === 0) { showToast({ message: '选题成功！请在选题结果中查看', icon: 'success' }); loadData() }
+    const r = await api.post('/student/select-topic', { tmid: t.id, choice: choiceNo.value, reason: reason.value })
+    if (r.code === 0) { showDlg.value = false; showToast({ message: '已提交志愿'+choiceNo.value+'，等待教师确认', icon: 'success' }); loadData() }
     else showToast({ message: r.msg, icon: 'fail' })
   } catch (e) { showToast('网络错误，请重试') }
 }
