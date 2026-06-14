@@ -79,9 +79,12 @@ const cards=reactive([
   {label:'学生总数',value:0,color:'#4CAF50'},{label:'指导教师',value:0,color:'#1E88E5'},
   {label:'题目总数',value:0,color:'#FB8C00'},{label:'已选题目',value:0,color:'#C62828'}
 ])
+let chartInstance = null
 function renderChart(data) {
   if (!pieChart.value) return
-  const chart = echarts.init(pieChart.value)
+  if (chartInstance) chartInstance.dispose()
+  chartInstance = echarts.init(pieChart.value)
+  const chart = chartInstance
   const unselected = (data.topicCount||0) - (data.selectedCount||0)
   chart.setOption({
     tooltip: { trigger: 'item' },

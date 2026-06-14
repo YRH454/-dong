@@ -181,7 +181,15 @@ public class AdminController {
     @PostMapping("/reset-teacher-pwd")
     public Map<String, Object> resetTeacherPwd(@RequestBody Map<String, String> body, HttpServletRequest req) {
         Map<String, Object> result = new HashMap<>();
-        try { String gh = body.get("gh"); new TeacherDao().modipwd(gh, Encrypt.MD5(gh), (String)req.getAttribute("adminId")); result.put("code", 0); result.put("msg", "Password reset"); }
+        try { String gh = body.get("gh"); new TeacherDao().modipwd(gh, Encrypt.MD5("123456"), (String)req.getAttribute("adminId")); result.put("code", 0); result.put("msg", "Password reset to 123456"); }
+        catch (Exception e) { result.put("code", 1); result.put("msg", e.getMessage()); }
+        return result;
+    }
+
+    @PostMapping("/reset-student-pwd")
+    public Map<String, Object> resetStudentPwd(@RequestBody Map<String, String> body, HttpServletRequest req) {
+        Map<String, Object> result = new HashMap<>();
+        try { String xh = body.get("xh"); new StudentDao().modipwd(xh, Encrypt.MD5("123456"), (String)req.getAttribute("adminId")); result.put("code", 0); result.put("msg", "Password reset to 123456"); }
         catch (Exception e) { result.put("code", 1); result.put("msg", e.getMessage()); }
         return result;
     }
@@ -213,7 +221,7 @@ public class AdminController {
         String aid=(String)req.getAttribute("adminId"); boolean root=isRoot(req);
         try(Connection c=JdbcUtil.getConnection();Statement s=c.createStatement()) {
             String sql = root ? "SELECT * FROM announcement ORDER BY is_top DESC, create_time DESC LIMIT 30"
-                : "SELECT * FROM announcement WHERE adminid='"+aid+"' ORDER BY is_top DESC, create_time DESC LIMIT 10";
+                : "SELECT * FROM announcement WHERE adminid='"+aid+"' OR adminid='system' ORDER BY is_top DESC, create_time DESC LIMIT 20";
             ResultSet rs=s.executeQuery(sql);
             while(rs.next()){Map<String,Object> m=new HashMap<>();m.put("id",rs.getInt("id"));m.put("title",rs.getString("title"));m.put("content",rs.getString("content"));m.put("createTime",rs.getString("create_time"));m.put("isTop",rs.getInt("is_top"));m.put("adminid",rs.getString("adminid"));list.add(m);}
             rs.close(); r.put("code",0); r.put("list",list);
@@ -225,11 +233,12 @@ public class AdminController {
     public Map<String,Object> addAnnouncement(@RequestBody Map<String,String> body, HttpServletRequest req) {
         Map<String,Object> r=new HashMap<>();
         try(Connection c=JdbcUtil.getConnection()) {
+            String aid = isRoot(req) ? "system" : (String)req.getAttribute("adminId");
             PreparedStatement ps=c.prepareStatement("INSERT INTO announcement(title,content,adminid,is_top) VALUES(?,?,?,?)");
-            ps.setString(1,body.get("title"));ps.setString(2,body.get("content"));ps.setString(3,(String)req.getAttribute("adminId"));ps.setInt(4,Integer.parseInt(body.getOrDefault("isTop","0")));
+            ps.setString(1,body.get("title"));ps.setString(2,body.get("content"));ps.setString(3,aid);ps.setInt(4,Integer.parseInt(body.getOrDefault("isTop","0")));
             ps.executeUpdate();ps.close();
-            OpLogUtil.log((String)req.getAttribute("adminId"), "管理员发布公告：" + body.get("title"));
-            r.put("code",0);r.put("msg","Published");
+            OpLogUtil.log(aid, (isRoot(req)?"[全局]":"") + "管理员发布公告：" + body.get("title"));
+            r.put("code",0);r.put("msg",isRoot(req) ? "全局公告已发布，所有部门可见" : "Published");
         }catch(Exception e){r.put("code",1);r.put("msg",e.getMessage());}
         return r;
     }

@@ -20,6 +20,15 @@
     </div>
   </van-popup>
 
+  <!-- Report Content Popup -->
+  <van-popup v-model:show="showRpt" round position="bottom" :style="{height:'70vh'}">
+    <div style="padding:16px;overflow-y:auto;height:100%">
+      <h4 style="margin:0 0 12px">📄 开题报告内容</h4>
+      <div style="white-space:pre-wrap;font-size:14px;line-height:1.8;color:#333">{{ rptContent }}</div>
+      <van-button block round style="margin-top:16px" @click="showRpt=false">关闭</van-button>
+    </div>
+  </van-popup>
+
   <van-empty v-if="!refreshing && !list.length" image="friends-o" description="暂无学生选择你的题目">
     <p style="color:#999;font-size:13px;text-align:center">等待学生选题并确认后，将在此显示</p>
   </van-empty>
@@ -57,10 +66,13 @@
         <van-tag v-else-if="s.reportStatus===1" type="success" size="small">已通过</van-tag>
         <van-tag v-else-if="s.reportStatus===2" type="danger" size="small">已驳回</van-tag>
       </div>
-      <!-- Review actions for pending reports -->
-      <div class="review-actions" v-if="s.reportStatus===0 || s.reportStatus===2">
-        <van-button size="mini" type="success" @click="reviewReport(s, 1)">通过</van-button>
-        <van-button size="mini" type="danger" @click="reviewReport(s, 2)">驳回</van-button>
+      <!-- View & Review -->
+      <div class="review-actions" v-if="s.reportStatus!==-1">
+        <van-button size="mini" plain @click="viewReport(s)">查看报告</van-button>
+        <template v-if="s.reportStatus===0 || s.reportStatus===2">
+          <van-button size="mini" type="success" @click="reviewReport(s, 1)">通过</van-button>
+          <van-button size="mini" type="danger" @click="reviewReport(s, 2)">驳回</van-button>
+        </template>
       </div>
       <div class="report-comment" v-if="s.reportComment">
         <span class="rc-label">评语：</span>{{ s.reportComment }}
@@ -76,12 +88,13 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { showToast, showConfirmDialog } from 'vant'
 import api from '../../api'
 
 const list = ref([]), refreshing = ref(false)
 const showTb = ref(false), tbContent = ref(''), tbSaving = ref(false), tbTopicId = ref(0)
+const showRpt = ref(false), rptContent = ref('')
 
 const pendingCount = computed(() => list.value.filter(s => s.status === 1).length)
 const confirmedCount = computed(() => list.value.filter(s => s.status === 2).length)
@@ -91,6 +104,9 @@ async function load() {
   refreshing.value = false
 }
 
+async function viewReport(s) {
+  try { const r = await api.get('/teacher/get-report-content?reportId='+s.reportId); if (r.code===0) { rptContent.value = r.content; showRpt.value = true } else showToast('暂无报告内容') } catch(e) { showToast('加载失败') }
+}
 async function reviewReport(s, status) {
   const label = status === 1 ? '通过' : '驳回'
   try { await showConfirmDialog({ title: label + '开题报告', message: '确定' + label + '该学生的开题报告？' }) } catch { return }
@@ -116,7 +132,9 @@ async function saveTb() {
   tbSaving.value = false
 }
 
-onMounted(load)
+let autoTimer = 0
+onMounted(() => { load(); autoTimer = setInterval(load, 30000) })
+onUnmounted(() => clearInterval(autoTimer))
 </script>
 
 <style scoped>

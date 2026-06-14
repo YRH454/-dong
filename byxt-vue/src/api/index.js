@@ -12,8 +12,7 @@ api.interceptors.response.use(
   res => res.data,
   err => {
     if (err.response?.status === 401) {
-      localStorage.removeItem('token')
-      localStorage.removeItem('user')
+      localStorage.clear()
       window.location.hash = '#/login'
     }
     return Promise.reject(err)

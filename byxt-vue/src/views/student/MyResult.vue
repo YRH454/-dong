@@ -69,7 +69,7 @@
         <!-- Report Section (for confirmed topics) -->
         <div class="report-section" v-if="item.status===2">
           <div class="report-header">📄 开题报告</div>
-          <div v-if="!item.reportStatus || item.reportStatus===-1" class="report-empty">
+          <div v-if="item.reportStatus==null||item.reportStatus===-1" class="report-empty">
             <span>尚未提交开题报告</span>
             <van-button size="small" type="success" round @click="openReport(item)">写报告</van-button>
           </div>
@@ -79,6 +79,7 @@
               <van-tag v-else-if="item.reportStatus===1" type="success">已通过</van-tag>
               <van-tag v-else-if="item.reportStatus===2" type="danger">已驳回</van-tag>
               <van-button size="mini" plain type="primary" @click="openReport(item)">重新提交</van-button>
+              <van-button size="mini" plain @click="viewMyReport(item)">查看内容</van-button>
             </div>
             <div class="report-comment" v-if="item.reportComment">
               <span class="rc-label">教师评语：</span>{{ item.reportComment }}
@@ -117,7 +118,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, onActivated } from 'vue'
+import { ref, onMounted, onActivated, onDeactivated, onUnmounted } from 'vue'
 import { showToast, showConfirmDialog } from 'vant'
 import api from '../../api'
 const userId = JSON.parse(localStorage.getItem('user')||'{}').userId || ''
@@ -126,7 +127,17 @@ const showTb = ref(false), tbContent = ref(''), showRp = ref(false), rpContent =
 async function viewTaskbook(topicId) {
   try { const r = await api.get('/student/get-taskbook-content?topicId='+topicId); if (r.code===0) { tbContent.value = r.content; showTb.value = true } else showToast('暂无任务书内容') } catch(e) { showToast('加载失败') }
 }
-function openReport(item) { rpTopicId.value = item.id; rpContent.value = ''; showRp.value = true }
+async function openReport(item) {
+  rpTopicId.value = item.id; rpContent.value = ''
+  // Pre-fill existing content if resubmitting
+  if (item.reportStatus!=null && item.reportStatus!==-1) {
+    try { const r = await api.get('/student/get-my-report-content?topicId='+item.id); if (r.code===0) rpContent.value = r.content } catch(e) {}
+  }
+  showRp.value = true
+}
+async function viewMyReport(item) {
+  try { const r = await api.get('/student/get-my-report-content?topicId='+item.id); if (r.code===0) { tbContent.value = r.content; showTb.value = true } else showToast('暂无报告内容') } catch(e) { showToast('加载失败') }
+}
 async function submitReport() {
   if (!rpContent.value.trim()) { showToast('请输入报告内容'); return }
   rpSaving.value = true
@@ -147,8 +158,11 @@ async function doDel() {
   try { await showConfirmDialog({ title: '确认删除', message: '删除后不可恢复' }) } catch { return }
   try { await api.get('/student/my-result?action=delete'); showToast({ message: '已删除', icon: 'success' }); load() } catch (e) {}
 }
-onMounted(load)
-onActivated(load)
+let timer = 0
+onMounted(() => { load(); timer = setInterval(load, 30000) })
+onActivated(() => { load(); if (!timer) timer = setInterval(load, 30000) })
+onDeactivated(() => { clearInterval(timer); timer = 0 })
+onUnmounted(() => clearInterval(timer))
 </script>
 
 <style scoped>

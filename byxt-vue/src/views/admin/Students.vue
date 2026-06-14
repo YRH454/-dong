@@ -13,6 +13,7 @@
     </div>
     <div class="s-info">{{ s.zy||'' }} {{ s.bj||'' }} | {{ s.phone||'' }} | {{ s.email||'' }}</div>
     <div class="s-actions">
+      <van-button size="mini" plain type="primary" @click="resetPwd(s)">重置密码</van-button>
       <van-button size="mini" type="danger" @click="delS(s.id)">删除</van-button>
     </div>
   </div>
@@ -50,6 +51,7 @@ async function addS(){
   try{await api.post('/admin/add-student',{...form});showToast({message:'添加成功',icon:'success'});showForm.value=false;const r=await api.get('/admin/student-list');list.value=r.list||[]}catch(e){}
   saving.value=false
 }
+async function resetPwd(s){try{await showConfirmDialog({title:'重置密码',message:'重置学生 '+s.xm+' 的密码为 123456？'})}catch{return};try{const r=await api.post('/admin/reset-student-pwd',{xh:s.xh});showToast(r.msg)}catch(e){}}
 async function delS(id){try{await showConfirmDialog({title:'确认删除',message:'删除该学生？'})}catch{return};try{await api.post('/admin/delete-student',{id});list.value=list.value.filter(s=>s.id!==id);showToast('已删除')}catch(e){}}
 </script>
 

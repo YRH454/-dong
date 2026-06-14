@@ -49,7 +49,8 @@ async function addDept() {
 }
 
 async function delDept(d) {
-  try { await showConfirmDialog({ title: '删除部门', message: `确定删除"${d.dp}"及其所有数据？此操作不可恢复！` }) } catch { return }
+  try { await showConfirmDialog({ title: '⚠️ 删除部门（第一步）', message: `确定要删除部门"${d.dp}"（账号：${d.userid}）吗？\n\n这将删除该部门下的所有教师、学生、题目、公告数据！` }) } catch { return }
+  try { await showConfirmDialog({ title: '⚠️ 最终确认（第二步）', message: `此操作完全不可恢复！\n\n请再次确认：删除部门"${d.dp}"及所有关联数据？`, confirmButtonText: '确认删除', confirmButtonColor: '#C62828' }) } catch { return }
   try { const r = await api.post('/admin/delete-department', { userid: d.userid }); showToast(r.msg); if (r.code === 0) load() } catch (e) { showToast('删除失败') }
 }
 

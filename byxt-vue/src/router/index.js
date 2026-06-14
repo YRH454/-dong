@@ -48,9 +48,10 @@ router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
   const role = localStorage.getItem('role')
   if (to.path !== '/login' && !token) return next('/login')
-  if (to.path.startsWith('/student') && role !== 'student') return next('/login')
-  if (to.path.startsWith('/teacher') && role !== 'teacher') return next('/login')
-  if (to.path.startsWith('/admin') && role !== 'admin' && role !== 'root') return next('/login')
+  // Role mismatch → redirect to user's own home page, not login
+  if (to.path.startsWith('/student') && role !== 'student') return next({ path: role==='teacher'?'/teacher':role==='admin'||role==='root'?'/admin':'/login', replace: true })
+  if (to.path.startsWith('/teacher') && role !== 'teacher') return next({ path: role==='student'?'/student':role==='admin'||role==='root'?'/admin':'/login', replace: true })
+  if (to.path.startsWith('/admin') && role !== 'admin' && role !== 'root') return next({ path: role==='student'?'/student':role==='teacher'?'/teacher':'/login', replace: true })
   next()
 })
 

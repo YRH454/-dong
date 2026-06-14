@@ -174,11 +174,35 @@ public class StudentController {
             java.io.FileWriter fw=new java.io.FileWriter(fname);
             fw.write(content); fw.close();
             java.sql.Connection c=com.byxt.util.JdbcUtil.getConnection();
-            java.sql.PreparedStatement ps=c.prepareStatement("INSERT INTO report(topic_id,student_xh,file_path,status) VALUES(?,?,?,0) ON DUPLICATE KEY UPDATE file_path=?,status=0");
-            ps.setInt(1,topicId);ps.setString(2,userId);ps.setString(3,fname);ps.setString(4,fname);
-            ps.executeUpdate();ps.close();c.close();
+            // Check existing report
+            java.sql.PreparedStatement ck=c.prepareStatement("SELECT id FROM report WHERE topic_id=? AND student_xh=? ORDER BY id DESC LIMIT 1");
+            ck.setInt(1,topicId); ck.setString(2,userId);
+            java.sql.ResultSet ckRs=ck.executeQuery();
+            if(ckRs.next()){
+                int rid=ckRs.getInt(1); ckRs.close(); ck.close();
+                java.sql.PreparedStatement up=c.prepareStatement("UPDATE report SET file_path=?,status=0 WHERE id=?");
+                up.setString(1,fname); up.setInt(2,rid); up.executeUpdate(); up.close();
+            } else {
+                ckRs.close(); ck.close();
+                java.sql.PreparedStatement in=c.prepareStatement("INSERT INTO report(topic_id,student_xh,file_path,status) VALUES(?,?,?,0)");
+                in.setInt(1,topicId); in.setString(2,userId); in.setString(3,fname); in.executeUpdate(); in.close();
+            }
+            c.close();
             OpLogUtil.log(adminId, "学生 " + userId + " 提交了开题报告(题目ID:" + topicId + ")");
             r.put("code",0);r.put("msg","报告提交成功");
+        }catch(Exception e){r.put("code",1);r.put("msg",e.getMessage());}
+        return r;
+    }
+
+    // Get my own report content
+    @GetMapping("/get-my-report-content")
+    public Map<String,Object> getMyReportContent(@RequestParam int topicId) {
+        Map<String,Object> r=new HashMap<>();
+        try(java.sql.Connection c=com.byxt.util.JdbcUtil.getConnection()) {
+            java.sql.PreparedStatement ps=c.prepareStatement("SELECT file_path FROM report WHERE topic_id=? ORDER BY id DESC LIMIT 1");
+            ps.setInt(1,topicId); java.sql.ResultSet rs=ps.executeQuery();
+            if(rs.next()&&rs.getString(1)!=null){ r.put("code",0); r.put("content",new String(java.nio.file.Files.readAllBytes(java.nio.file.Paths.get(rs.getString(1))))); }
+            else r.put("code",1); rs.close();ps.close();
         }catch(Exception e){r.put("code",1);r.put("msg",e.getMessage());}
         return r;
     }
@@ -224,7 +248,7 @@ public class StudentController {
     public Map<String,Object> getMyReport(@RequestParam int topicId) {
         Map<String,Object> r=new HashMap<>();
         try(java.sql.Connection c=com.byxt.util.JdbcUtil.getConnection()) {
-            java.sql.PreparedStatement ps=c.prepareStatement("SELECT * FROM report WHERE topic_id=?");
+            java.sql.PreparedStatement ps=c.prepareStatement("SELECT * FROM report WHERE topic_id=? ORDER BY id DESC LIMIT 1");
             ps.setInt(1,topicId);
             java.sql.ResultSet rs=ps.executeQuery();
             if(rs.next()){r.put("code",0);r.put("id",rs.getInt("id"));r.put("file_path",rs.getString("file_path"));r.put("status",rs.getInt("status"));r.put("comment",rs.getString("comment"));r.put("createTime",rs.getString("create_time"));}

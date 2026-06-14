@@ -43,14 +43,14 @@ public class LoginController {
                 if (!u.getUserpwd().equals(Encrypt.MD5(userpwd))) { result.put("code", 1); result.put("msg", "Wrong password"); return result; }
                 if (!dp.startsWith(u.getUserid())) { result.put("code", 1); result.put("msg", "Wrong department"); return result; }
                 result.put("code", 0); result.put("token", "admin:" + u.getUserid() + ":" + u.getUserid() + "::" + u.getDp());
-                result.put("role", "admin"); result.put("name", ""); result.put("userId", u.getUserid());
+                result.put("role", "admin"); result.put("name", u.getDp()); result.put("userId", u.getUserid());
                 result.put("dp", u.getDp()); result.put("adminId", u.getUserid());
             } else if ("root".equals(sf)) {
                 Root r = new RootDao().findUserById(userid);
                 if (r == null) { result.put("code", 1); result.put("msg", "User not found"); return result; }
                 if (!r.getRootpwd().equals(Encrypt.MD5(userpwd))) { result.put("code", 1); result.put("msg", "Wrong password"); return result; }
                 result.put("code", 0); result.put("token", "root:" + r.getRootid() + ":::"); result.put("role", "root");
-                result.put("name", ""); result.put("userId", r.getRootid());
+                result.put("name", "超级管理员"); result.put("userId", r.getRootid());
             } else { result.put("code", 1); result.put("msg", "Invalid role"); }
         } catch (Exception e) { result.put("code", 1); result.put("msg", "Login error: " + e.getMessage()); }
         return result;
@@ -68,7 +68,7 @@ public class LoginController {
     public List<Map<String,Object>> getAnnouncements(@PathVariable String adminId) {
         List<Map<String,Object>> list=new ArrayList<>();
         try(java.sql.Connection c=JdbcUtil.getConnection();java.sql.Statement s=c.createStatement()) {
-            java.sql.ResultSet rs=s.executeQuery("SELECT id,title,content,create_time FROM announcement WHERE adminid='"+adminId+"' ORDER BY is_top DESC, create_time DESC LIMIT 5");
+            java.sql.ResultSet rs=s.executeQuery("SELECT id,title,content,create_time FROM announcement WHERE adminid='"+adminId+"' OR adminid='system' ORDER BY is_top DESC, create_time DESC LIMIT 5");
             while(rs.next()){Map<String,Object> m=new HashMap<>();m.put("id",rs.getInt("id"));m.put("title",rs.getString("title"));m.put("content",rs.getString("content"));m.put("createTime",rs.getString("create_time"));list.add(m);}
             rs.close();
         }catch(Exception ignored){}

@@ -83,7 +83,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onActivated } from 'vue'
+import { ref, computed, onMounted, onActivated, onDeactivated, onUnmounted } from 'vue'
 import { showToast, showConfirmDialog } from 'vant'
 import api from '../../api'
 import AnnounceBanner from '../../components/AnnounceBanner.vue'
@@ -137,10 +137,9 @@ function onPage(p) { page.value = p }
 function onSearch() { page.value = 1 }
 let db = 0
 function debounceSearch() { clearTimeout(db); db = setTimeout(onSearch, 300) }
-
-import { onUnmounted } from 'vue'
 onMounted(() => { loadData(); timer.value = setInterval(loadData, 30000) })
-onActivated(() => { loadData() })
+onActivated(() => { loadData(); if (!timer.value) timer.value = setInterval(loadData, 30000) })
+onDeactivated(() => { clearInterval(timer.value); timer.value = 0 })
 onUnmounted(() => clearInterval(timer.value))
 </script>
 
