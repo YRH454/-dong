@@ -1,0 +1,40 @@
+选课系统 - 数据库配置备份
+备份时间: 2026-06-11
+
+=== 阿里云 RDS MySQL 连接信息 ===
+外网地址: rm-cn-ils4tna5o0001hgo.rwlb.rds.aliyuncs.com
+外网端口: 3306
+内网地址: rm-cn-ils4tna5o0001h.rwlb.rds.aliyuncs.com
+内网端口: 3306
+数据库名: byxt
+账号: dms_user_2c5fb75
+密码: Mr@13791758597
+
+=== RDS 实例信息 ===
+实例ID: rm-cn-ils4tna5o0001h
+地域: 华北2（北京）可用区L
+类型: MySQL 8.0 Serverless
+网络: 专有网络 VPC
+
+=== JDBC 连接字符串 ===
+jdbc:mysql://rm-cn-ils4tna5o0001hgo.rwlb.rds.aliyuncs.com:3306/byxt?useSSL=false&characterEncoding=UTF-8
+
+=== 白名单 IP ===
+123.135.121.249
+112.245.50.207
+
+=== 数据库表结构（byxt 库，6 张表，InnoDB 引擎） ===
+root      - 超级管理员（rootid, rootpwd）
+user      - 院系管理员账号（userid, userpwd, dp, lastlogin, xuhao）
+teacher   - 教师（gh工号, xm姓名, pwd密码, zhicheng职称, shangxian上限, adminid）
+student   - 学生（xh学号, xm姓名, pwd密码, zy专业, bj班级, adminid）
+tm        - 选题（gh工号, txm教师姓名, tm题目, bz备注, xh学号, sxm学生姓名, zy专业, bj班级, adminid）
+zt        - 状态（zt, adminid）
+
+=== 默认超级管理员 ===
+用户名: root
+密码: root（MD5: 63a9f0ea7bb98050796b649e85481845）
+登录页: http://localhost:8081/byxt/login_root.jsp
+
+=== 数据库备份导出命令（示例） ===
+mysqldump -h rm-cn-ils4tna5o0001hgo.rwlb.rds.aliyuncs.com -P 3306 -u dms_user_2c5fb75 -p byxt > byxt_backup.sql

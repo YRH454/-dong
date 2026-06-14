@@ -1,0 +1,9 @@
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;background:#f5f7f5;color:#333}
+#app{min-height:100vh}
+:root{
+  --green:#2E7D32;--green-light:#4CAF50;--green-bg:#E8F5E9;
+  --blue:#1565C0;--blue-light:#1E88E5;--blue-bg:#E3F2FD;
+  --orange:#E65100;--orange-light:#FB8C00;--orange-bg:#FFF3E0;
+  --red:#C62828;--red-light:#EF5350;--red-bg:#FFEBEE;
+}

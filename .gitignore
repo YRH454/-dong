@@ -1,0 +1,31 @@
+# 敏感信息
+ECS配置.txt
+
+# 构建产物
+byxt-server/target/
+byxt-vue/dist/
+byxt-vue/node_modules/
+
+# Java
+*.class
+*.jar
+*.war
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# 上传文件
+byxt-server/uploads/
+byxt-server/reports/
+D:/byxt-data/
+
+# 临时文件
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+
+# Word文档
+*.docx
